@@ -323,7 +323,12 @@ tbody td{padding:9px 14px}
   <div class="kpi-strip" id="histKpis"><div class="loading-wrap"><div class="spinner"></div></div></div>
 
   <div class="chart-card">
-    <div class="cc-hdr"><span class="cc-title">Volumen diario — Completados vs Cancelados</span><span class="cc-badge blue" id="histVolBadge">—</span></div>
+    <div class="cc-hdr"><span class="cc-title">Volumen por mes — Finalizados vs Cancelados</span><span class="cc-badge blue" id="histMesBadge">—</span></div>
+    <div class="chart-body" style="min-height:200px"><canvas id="histMes"></canvas></div>
+  </div>
+
+  <div class="chart-card">
+    <div class="cc-hdr"><span class="cc-title">Volumen diario — Finalizados vs Cancelados</span><span class="cc-badge blue" id="histVolBadge">—</span></div>
     <div class="chart-body"><canvas id="histVol"></canvas></div>
   </div>
 
@@ -768,6 +773,35 @@ function renderHistorico(){
     ${kpiCard('EFECTIVIDAD TOTAL',fmtPct(efect),'Fin/Total',efect>=85?'up':efect>=60?'neutral':'down',efect>=85?'#16a34a':efect>=60?'#d97706':'#dc2626')}
     ${kpiCard('CIUDADES',fmt(new Set(ciuData.map(d=>d.city)).size),'Con actividad','neutral','#9ca3af')}
   `;
+
+  // ── Gráfico por MES ──
+  const MESES=['','Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  const byMes={};
+  rawKpis.filter(d=>d.fecha).forEach(d=>{
+    const m=getMes(d.fecha);
+    if(!byMes[m]) byMes[m]={total:0,comp:0,canc:0,ing:0};
+    byMes[m].total+=parseInt(d.total_servicios||0);
+    byMes[m].comp +=parseInt(d.completados||0);
+    byMes[m].canc +=parseInt(d.cancelados||0);
+    byMes[m].ing  +=parseFloat(d.ingreso_generado||0);
+  });
+  const mesKeys=Object.keys(byMes).sort();
+  const mesLabels=mesKeys.map(m=>MESES[parseInt(m)]+' 2026');
+  destroyChart('histMes');
+  charts['histMes']=new Chart(document.getElementById('histMes'),{type:'bar',
+    data:{labels:mesLabels,datasets:[
+      {label:'Finalizados', data:mesKeys.map(m=>byMes[m].comp), backgroundColor:'rgba(22,163,74,0.8)',  borderRadius:5},
+      {label:'Cancelados',  data:mesKeys.map(m=>byMes[m].canc), backgroundColor:'rgba(220,38,38,0.7)',  borderRadius:5},
+      {label:'En proceso',  data:mesKeys.map(m=>Math.max(0,byMes[m].total-byMes[m].comp-byMes[m].canc)), backgroundColor:'rgba(59,130,246,0.5)', borderRadius:5}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{position:'bottom',labels:{font:{size:10},boxWidth:10,padding:10}},
+        tooltip:{callbacks:{afterBody:items=>{const m=mesKeys[items[0].dataIndex];return [`Total: ${fmt(byMes[m].total)}`,`Ingreso: ${fmtCOP(byMes[m].ing)}`];}}}
+      },
+      scales:{x:{ticks:{font:{size:11}}},y:{ticks:{font:{size:10},callback:v=>fmt(v)}}}
+    }
+  });
+  document.getElementById('histMesBadge').textContent=`${mesKeys.length} meses`;
 
   const sorted=[...data].sort((a,b)=>new Date(a.fecha)-new Date(b.fecha));
   const labels=sorted.map(d=>new Date(d.fecha).toLocaleDateString('es-CO',{day:'2-digit',month:'2-digit'}));
