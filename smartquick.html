@@ -659,6 +659,50 @@ function filterPendientes(){
   if(q)      data=data.filter(d=>(d.service_id||'').toLowerCase().includes(q)||(d.city||'').toLowerCase().includes(q)||(d.client||'').toLowerCase().includes(q));
   document.getElementById('pend-info').textContent=`${fmt(data.length)} guías`;
   document.getElementById('pendCount').textContent=fmt(data.length)+' guías';
+
+  // ── Actualizar KPIs con datos filtrados ──
+  const resumenFiltrado = data;
+  const totalF    = resumenFiltrado.length;
+  const criticosF = resumenFiltrado.filter(d=>d.nivel_alerta==='CRITICO').length;
+  const altosF    = resumenFiltrado.filter(d=>d.nivel_alerta==='ALTO').length;
+  const mediosF   = resumenFiltrado.filter(d=>d.nivel_alerta==='MEDIO').length;
+  const estadosF  = [...new Set(resumenFiltrado.map(d=>d.status))].length;
+  const recientesF= resumenFiltrado.filter(d=>d.nivel_alerta==='RECIENTE').length;
+  document.getElementById('pendKpis').innerHTML = `
+    ${kpiCard('TOTAL PENDIENTES',fmt(totalF),'Sin finalizar','down','#dc2626')}
+    ${kpiCard('CRÍTICOS +30 DÍAS',fmt(criticosF),'Acción inmediata',criticosF>0?'down':'neutral','#dc2626')}
+    ${kpiCard('ALTO 15-29 DÍAS',fmt(altosF),'Seguimiento urgente',altosF>0?'down':'neutral','#d97706')}
+    ${kpiCard('MEDIO 7-14 DÍAS',fmt(mediosF),'Monitorear','neutral','#F5C400')}
+    ${kpiCard('ESTADOS ACTIVOS',fmt(estadosF),'Tipos de pendiente','neutral','#1B4FD8')}
+    ${kpiCard('RECIENTES HOY',fmt(recientesF),'Hoy/Ayer','neutral','#9ca3af')}
+  `;
+
+  // ── Actualizar gráficos con datos filtrados ──
+  const estados_listF=[...new Set(resumenFiltrado.map(d=>d.status))];
+  const nivelesF=['CRITICO','ALTO','MEDIO','BAJO','RECIENTE'];
+  const nColoresF={'CRITICO':'rgba(220,38,38,0.8)','ALTO':'rgba(217,119,6,0.8)','MEDIO':'rgba(245,196,0,0.8)','BAJO':'rgba(59,130,246,0.6)','RECIENTE':'rgba(156,163,175,0.6)'};
+  const datasetsF=nivelesF.map(n=>({
+    label:n, backgroundColor:nColoresF[n], borderRadius:3,
+    data:estados_listF.map(e=>resumenFiltrado.filter(d=>d.status===e&&d.nivel_alerta===n).length)
+  })).filter(d=>d.data.some(v=>v>0));
+  destroyChart('pendChart');
+  charts['pendChart']=new Chart(document.getElementById('pendChart'),{type:'bar',
+    data:{labels:estados_listF,datasets:datasetsF},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{position:'bottom',labels:{font:{size:10},boxWidth:10,padding:8}}},
+      scales:{x:{stacked:true,ticks:{font:{size:10}}},y:{stacked:true,ticks:{font:{size:10}}}}}
+  });
+
+  const dValsF=nivelesF.map(n=>resumenFiltrado.filter(d=>d.nivel_alerta===n).length);
+  const dClrsF=['#dc2626','#d97706','#F5C400','#3b82f6','#9ca3af'];
+  destroyChart('pendDonut');
+  charts['pendDonut']=new Chart(document.getElementById('pendDonut'),{type:'doughnut',
+    data:{labels:nivelesF,datasets:[{data:dValsF,backgroundColor:dClrsF,borderWidth:0}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:'65%',plugins:{legend:{display:false}}}
+  });
+  document.getElementById('pendDonutLegend').innerHTML=nivelesF.map((l,i)=>
+    `<div class="dl-item"><div class="dl-dot" style="background:${dClrsF[i]}"></div><span class="dl-label">${l}</span><span class="dl-val">${fmt(dValsF[i])}</span></div>`
+  ).join('');
   const nb=v=>{
     const cls={'CRITICO':'red','ALTO':'amber','MEDIO':'','BAJO':'blue','RECIENTE':''}[v]||'';
     const ic={'CRITICO':'🔴','ALTO':'🟠','MEDIO':'🟡','BAJO':'🟢','RECIENTE':'⚪'}[v]||'';
