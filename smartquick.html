@@ -3,7 +3,15 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SmartQuick — Centro de Control Operativo</title>
+<title>Torre de Control — Quick Last Mile</title>
+
+<meta name=theme-color content="#0D0D0D">
+<meta name=mobile-web-app-capable content="yes">
+<meta name=apple-mobile-web-app-capable content="yes">
+<meta name=apple-mobile-web-app-status-bar-style content="black-translucent">
+<meta name=apple-mobile-web-app-title content="Torre de Control">
+<link rel="apple-touch-icon" href="https://sergio1060.github.io/Plan-de-Vuelo-Quick-Last-Mile/icon-192.png">
+<link rel="manifest" href="manifest.json">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <style>
@@ -181,6 +189,75 @@ tbody td{padding:9px 14px}
 .shdr{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:.5rem}
 .shdr h2{font-size:11px;font-weight:600;color:var(--text-2);letter-spacing:.5px;text-transform:uppercase}
 .shdr span{font-size:11px;color:var(--text-3)}
+
+/* ===================== MOBILE RESPONSIVE ===================== */
+/* Bottom nav para móvil */
+.mob-nav{display:none;position:fixed;bottom:0;left:0;right:0;background:var(--qk-black);border-top:1px solid rgba(255,255,255,0.08);z-index:100;padding:0 0 env(safe-area-inset-bottom,0) 0}
+.mob-nav-inner{display:flex;justify-content:space-around;align-items:stretch}
+.mob-nav-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px 4px 6px;cursor:pointer;color:rgba(255,255,255,0.35);font-size:9px;font-weight:500;letter-spacing:.3px;transition:color .15s;position:relative;min-height:52px;border:none;background:none;font-family:"IBM Plex Sans",sans-serif;gap:3px}
+.mob-nav-item svg{width:20px;height:20px;flex-shrink:0}
+.mob-nav-item.active{color:var(--qk-yellow)}
+.mob-nav-item .mob-badge{position:absolute;top:6px;right:calc(50% - 14px);background:var(--red);color:#fff;font-size:8px;font-weight:700;border-radius:10px;padding:1px 4px;min-width:14px;text-align:center}
+
+@media (max-width: 768px) {
+  /* Ocultar sidebar desktop, mostrar nav móvil */
+  .sidebar{display:none!important}
+  .mob-nav{display:block}
+  
+  /* Header simplificado */
+  .header{padding:0 .875rem;height:48px}
+  .h-sub{display:none}
+  .h-div{display:none}
+  .h-title{font-size:13px}
+  .h-time{display:none}
+  .btn-refresh{padding:5px 10px;font-size:11px}
+  .live-pill{padding:3px 8px}
+  .live-text{font-size:10px}
+  
+  /* Shell y main */
+  .shell{height:calc(100vh - 48px)}
+  .main{padding:.75rem;padding-bottom:calc(60px + env(safe-area-inset-bottom,0) + .75rem)}
+  
+  /* KPI strip: 2 cols en móvil */
+  .kpi-strip{grid-template-columns:repeat(2,1fr)!important;gap:8px}
+  .kpi-val{font-size:18px}
+  .kpi-card{padding:.75rem .875rem}
+  
+  /* Charts: 1 col */
+  .charts-row.col2{grid-template-columns:1fr!important}
+  .cumpl-split{grid-template-columns:1fr!important}
+  
+  /* Filter bar */
+  .fbar{gap:7px;padding:8px 10px}
+  .fbar-info{display:none}
+  
+  /* Tablas: scroll horizontal */
+  .tbl-card{overflow:hidden}
+  .tbl-card > div{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  table{min-width:520px}
+  thead th{font-size:9px;padding:7px 10px}
+  tbody td{padding:8px 10px;font-size:11.5px}
+  
+  /* Multi-select dropdown */
+  .ms-dropdown{min-width:180px}
+  .ms-btn{min-width:110px;font-size:11px}
+  
+  /* Alert strip */
+  .alert-item{font-size:11px;padding:7px 10px}
+  
+  /* Cumplimiento big numbers */
+  .cumpl-big{font-size:28px}
+  .cumpl-card{padding:.875rem 1rem}
+  
+  /* Charts height */
+  .chart-body{min-height:160px!important}
+}
+
+@media (max-width: 380px) {
+  .kpi-strip{grid-template-columns:1fr 1fr!important}
+  .kpi-val{font-size:16px}
+  .h-title{font-size:12px}
+}
 </style>
 </head>
 <body>
@@ -188,7 +265,7 @@ tbody td{padding:9px 14px}
 <header class="header">
   <div class="h-left">
     <div class="logo-badge">Q</div>
-    <span class="h-title">Smart<em>Quick</em> — Torre de Control · <em>Quick Live</em></span>
+    <span class="h-title">Torre de Control</span>
     <div class="h-div"></div>
     <span class="h-sub">Quick Help Courier S.A.S.</span>
   </div>
@@ -582,6 +659,50 @@ function filterPendientes(){
   if(q)      data=data.filter(d=>(d.service_id||'').toLowerCase().includes(q)||(d.city||'').toLowerCase().includes(q)||(d.client||'').toLowerCase().includes(q));
   document.getElementById('pend-info').textContent=`${fmt(data.length)} guías`;
   document.getElementById('pendCount').textContent=fmt(data.length)+' guías';
+
+  // ── Actualizar KPIs con datos filtrados ──
+  const resumenFiltrado = data;
+  const totalF    = resumenFiltrado.length;
+  const criticosF = resumenFiltrado.filter(d=>d.nivel_alerta==='CRITICO').length;
+  const altosF    = resumenFiltrado.filter(d=>d.nivel_alerta==='ALTO').length;
+  const mediosF   = resumenFiltrado.filter(d=>d.nivel_alerta==='MEDIO').length;
+  const estadosF  = [...new Set(resumenFiltrado.map(d=>d.status))].length;
+  const recientesF= resumenFiltrado.filter(d=>d.nivel_alerta==='RECIENTE').length;
+  document.getElementById('pendKpis').innerHTML = `
+    ${kpiCard('TOTAL PENDIENTES',fmt(totalF),'Sin finalizar','down','#dc2626')}
+    ${kpiCard('CRÍTICOS +30 DÍAS',fmt(criticosF),'Acción inmediata',criticosF>0?'down':'neutral','#dc2626')}
+    ${kpiCard('ALTO 15-29 DÍAS',fmt(altosF),'Seguimiento urgente',altosF>0?'down':'neutral','#d97706')}
+    ${kpiCard('MEDIO 7-14 DÍAS',fmt(mediosF),'Monitorear','neutral','#F5C400')}
+    ${kpiCard('ESTADOS ACTIVOS',fmt(estadosF),'Tipos de pendiente','neutral','#1B4FD8')}
+    ${kpiCard('RECIENTES HOY',fmt(recientesF),'Hoy/Ayer','neutral','#9ca3af')}
+  `;
+
+  // ── Actualizar gráficos con datos filtrados ──
+  const estados_listF=[...new Set(resumenFiltrado.map(d=>d.status))];
+  const nivelesF=['CRITICO','ALTO','MEDIO','BAJO','RECIENTE'];
+  const nColoresF={'CRITICO':'rgba(220,38,38,0.8)','ALTO':'rgba(217,119,6,0.8)','MEDIO':'rgba(245,196,0,0.8)','BAJO':'rgba(59,130,246,0.6)','RECIENTE':'rgba(156,163,175,0.6)'};
+  const datasetsF=nivelesF.map(n=>({
+    label:n, backgroundColor:nColoresF[n], borderRadius:3,
+    data:estados_listF.map(e=>resumenFiltrado.filter(d=>d.status===e&&d.nivel_alerta===n).length)
+  })).filter(d=>d.data.some(v=>v>0));
+  destroyChart('pendChart');
+  charts['pendChart']=new Chart(document.getElementById('pendChart'),{type:'bar',
+    data:{labels:estados_listF,datasets:datasetsF},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{position:'bottom',labels:{font:{size:10},boxWidth:10,padding:8}}},
+      scales:{x:{stacked:true,ticks:{font:{size:10}}},y:{stacked:true,ticks:{font:{size:10}}}}}
+  });
+
+  const dValsF=nivelesF.map(n=>resumenFiltrado.filter(d=>d.nivel_alerta===n).length);
+  const dClrsF=['#dc2626','#d97706','#F5C400','#3b82f6','#9ca3af'];
+  destroyChart('pendDonut');
+  charts['pendDonut']=new Chart(document.getElementById('pendDonut'),{type:'doughnut',
+    data:{labels:nivelesF,datasets:[{data:dValsF,backgroundColor:dClrsF,borderWidth:0}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:'65%',plugins:{legend:{display:false}}}
+  });
+  document.getElementById('pendDonutLegend').innerHTML=nivelesF.map((l,i)=>
+    `<div class="dl-item"><div class="dl-dot" style="background:${dClrsF[i]}"></div><span class="dl-label">${l}</span><span class="dl-val">${fmt(dValsF[i])}</span></div>`
+  ).join('');
   const nb=v=>{
     const cls={'CRITICO':'red','ALTO':'amber','MEDIO':'','BAJO':'blue','RECIENTE':''}[v]||'';
     const ic={'CRITICO':'🔴','ALTO':'🟠','MEDIO':'🟡','BAJO':'🟢','RECIENTE':'⚪'}[v]||'';
@@ -914,10 +1035,10 @@ function renderHistorico(){
     ${kpiCard('CIUDADES',fmt(new Set(ciuData.map(d=>d.city)).size),'Con actividad','neutral','#9ca3af')}
   `;
 
-  // ── Gráfico por MES ──
+  // ── Gráfico por MES (usa datos filtrados) ──
   const MESES=['','Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
   const byMes={};
-  rawKpis.filter(d=>d.fecha).forEach(d=>{
+  data.forEach(d=>{
     const m=getMes(d.fecha);
     if(!byMes[m]) byMes[m]={total:0,comp:0,canc:0,ing:0};
     byMes[m].total+=parseInt(d.total_servicios||0);
@@ -944,7 +1065,10 @@ function renderHistorico(){
   document.getElementById('histMesBadge').textContent=`${mesKeys.length} meses`;
 
   const sorted=[...data].sort((a,b)=>new Date(a.fecha)-new Date(b.fecha));
-  const labels=sorted.map(d=>new Date(d.fecha).toLocaleDateString('es-CO',{day:'2-digit',month:'2-digit'}));
+  // Etiquetas diarias: mostrar cada N días según volumen para evitar solapamiento
+  const nDias = sorted.length;
+  const tickStep = nDias > 90 ? 14 : nDias > 30 ? 7 : nDias > 14 ? 3 : 1;
+  const labels=sorted.map(d=>new Date(d.fecha+'T12:00:00').toLocaleDateString('es-CO',{day:'2-digit',month:'2-digit'}));
 
   destroyChart('histVol');
   charts['histVol']=new Chart(document.getElementById('histVol'),{type:'bar',
@@ -953,10 +1077,14 @@ function renderHistorico(){
       {label:'Cancelados', data:sorted.map(d=>parseInt(d.cancelados||0)), backgroundColor:'rgba(220,38,38,0.6)', borderRadius:3,stack:'s'},
       {label:'En proceso', data:sorted.map(d=>Math.max(0,parseInt(d.total_servicios||0)-parseInt(d.completados||0)-parseInt(d.cancelados||0))),backgroundColor:'rgba(59,130,246,0.5)',borderRadius:3,stack:'s'}
     ]},
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{size:10},boxWidth:10,padding:10}}},
-      scales:{x:{stacked:true,ticks:{font:{size:9}}},y:{stacked:true,ticks:{font:{size:10}}}}}
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{position:'bottom',labels:{font:{size:10},boxWidth:10,padding:10}},
+        tooltip:{callbacks:{title:ctx=>sorted[ctx[0].dataIndex]?.fecha||ctx[0].label,label:ctx=>`${ctx.dataset.label}: ${fmt(ctx.raw)}`}}
+      },
+      scales:{x:{stacked:true,ticks:{font:{size:9},maxRotation:45,autoSkip:true,maxTicksLimit:nDias>60?15:nDias>30?20:nDias}},
+              y:{stacked:true,ticks:{font:{size:10},callback:v=>fmt(v)}}}}
   });
-  document.getElementById('histVolBadge').textContent=fmt(total)+' servicios';
+  document.getElementById('histVolBadge').textContent=fmt(total)+' servicios · '+nDias+' días';
 
   destroyChart('histCumpl');
   charts['histCumpl']=new Chart(document.getElementById('histCumpl'),{type:'line',
@@ -1087,7 +1215,7 @@ function renderCumplimiento(){
   `;
 
   const sorted=[...data].sort((a,b)=>new Date(a.fecha)-new Date(b.fecha));
-  const labels=sorted.map(d=>new Date(d.fecha).toLocaleDateString('es-CO',{day:'2-digit',month:'2-digit'}));
+  const labels=sorted.map(d=>new Date(d.fecha+'T12:00:00').toLocaleDateString('es-CO',{day:'2-digit',month:'2-digit'}));
   const valsT=sorted.map(d=>parseFloat(d.cumplimiento_pct||0));
   const valsO=sorted.map(d=>{
     const t=parseInt(d.total_servicios||0),c=parseInt(d.completados||0),k=parseInt(d.cancelados||0);
@@ -1218,5 +1346,103 @@ document.addEventListener('click', e=>{
 loadAll();
 setInterval(()=>loadAll(),5*60*1000);
 </script>
-</body>
+
+<div id="pwaPrompt" style="display:none;position:fixed;bottom:70px;left:12px;right:12px;background:#1a1a1a;border:1px solid rgba(245,196,0,0.3);border-radius:12px;padding:14px 16px;z-index:200;box-shadow:0 8px 32px rgba(0,0,0,0.4)">
+  <div style="display:flex;align-items:center;gap:12px">
+    <div style="width:36px;height:36px;background:var(--qk-yellow);border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:16px;color:#000;flex-shrink:0">Q</div>
+    <div style="flex:1">
+      <div style="color:#fff;font-size:13px;font-weight:600;margin-bottom:2px">Instalar Torre de Control</div>
+      <div style="color:rgba(255,255,255,0.5);font-size:11px">Agregar a pantalla de inicio</div>
+    </div>
+    <button id="pwaInstallBtn" style="background:var(--qk-yellow);color:#000;border:none;border-radius:8px;padding:7px 14px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">Instalar</button>
+    <button onclick="document.getElementById('pwaPrompt').style.display='none'" style="background:none;border:none;color:rgba(255,255,255,0.4);font-size:18px;cursor:pointer;padding:0;line-height:1">×</button>
+  </div>
+</div>
+
+<nav class="mob-nav">
+  <div class="mob-nav-inner">
+    <button class="mob-nav-item active" data-page="planvuelo" onclick="showPage(this);closeMobOthers(this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      <span>Torre</span>
+      <span class="mob-badge" id="mobAlertBadge" style="display:none">!</span>
+    </button>
+    <button class="mob-nav-item" data-page="historico" onclick="showPage(this);closeMobOthers(this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      <span>Histórico</span>
+    </button>
+    <button class="mob-nav-item" data-page="ciudades" onclick="showPage(this);closeMobOthers(this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="10" r="3"/><path d="M12 2a8 8 0 0 0-8 8c0 5.4 7 12 8 12s8-6.6 8-12a8 8 0 0 0-8-8z"/></svg>
+      <span>Ciudades</span>
+    </button>
+    <button class="mob-nav-item" data-page="cumplimiento" onclick="showPage(this);closeMobOthers(this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>
+      <span>Cumpl.</span>
+    </button>
+    <button class="mob-nav-item" data-page="pendientes" onclick="showPage(this);closeMobOthers(this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      <span>Pendientes</span>
+      <span class="mob-badge" id="mobPendBadge" style="display:none">!</span>
+    </button>
+  </div>
+</nav>
+<script>
+// ─── MOBILE NAV SYNC ──────────────────────────────────────
+function closeMobOthers(el){
+  document.querySelectorAll('.mob-nav-item').forEach(n=>n.classList.remove('active'));
+  el.classList.add('active');
+  // Sync sidebar
+  const page = el.dataset.page;
+  document.querySelectorAll('.nav-item').forEach(n=>{
+    n.classList.toggle('active', n.dataset.page===page);
+  });
+}
+
+// Sync sidebar clicks to mobile nav
+const _origShowPage = showPage;
+window.showPage = function(el){
+  _origShowPage(el);
+  const page = el.dataset.page;
+  document.querySelectorAll('.mob-nav-item').forEach(n=>{
+    n.classList.toggle('active', n.dataset.page===page);
+  });
+};
+
+// Sync alert badges to mobile nav
+const _origLoadAll = loadAll;
+
+// Badge sync after load
+function syncMobBadges(){
+  const ab = document.getElementById('alertBadge');
+  const mab = document.getElementById('mobAlertBadge');
+  if(ab && mab){ mab.style.display=ab.style.display; mab.textContent=ab.textContent; }
+  const pb = document.getElementById('pendientesBadge');
+  const mpb = document.getElementById('mobPendBadge');
+  if(pb && mpb){ mpb.style.display=pb.style.display; mpb.textContent=pb.textContent; }
+}
+setInterval(syncMobBadges, 2000);
+
+// ─── PWA INSTALL ──────────────────────────────────────────
+let deferredPrompt;
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredPrompt = e;
+  const isMobile = window.innerWidth <= 768;
+  if(isMobile) setTimeout(()=>{ document.getElementById('pwaPrompt').style.display='block'; }, 3000);
+});
+document.getElementById('pwaInstallBtn')?.addEventListener('click', async () => {
+  if(!deferredPrompt) return;
+  deferredPrompt.prompt();
+  const { outcome } = await deferredPrompt.userChoice;
+  deferredPrompt = null;
+  document.getElementById('pwaPrompt').style.display='none';
+});
+window.addEventListener('appinstalled', () => {
+  document.getElementById('pwaPrompt').style.display='none';
+});
+
+// Register service worker
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('sw.js').catch(()=>{});
+}
+</script></body>
 </html>
