@@ -852,7 +852,7 @@ async function fetchAPI(path){
 
 // ─── FILTER DATA ─────────────────────────────────────────
 function filterKpis(mes, semana, ciudades){
-  let data = rawKpis.filter(d=>d.fecha);
+  let data = rawKpis.filter(d=>d.fecha && new Date(d.fecha).getFullYear() >= 2026);
   if(mes)    data = data.filter(d=>getMes(d.fecha)===mes);
   if(semana) data = data.filter(d=>getSemana(d.fecha)===semana);
   // ciudades filter: rawCiudades tiene por ciudad/fecha
@@ -901,7 +901,7 @@ function buildKpis(data, ciuData, ciudades){
 async function renderPV(){
   const ciudades = getSelectedCiudades('ms-pv');
   const kpis  = rawKpis.filter(d=>d.fecha);
-  const today = kpis.length>0?kpis[kpis.length-1]:null;
+  const today = kpis.length>0?kpis[0]:null; // primer elemento = más reciente (ORDER BY fecha DESC)
   let ciuHoy  = rawCiudadesHoy; // solo datos de hoy
   if(ciudades) ciuHoy = ciuHoy.filter(d=>ciudades.includes(d.city));
 
@@ -1007,7 +1007,7 @@ function renderHistorico(){
   const semana  = document.getElementById('hist-semana').value;
   const ciudades= getSelectedCiudades('ms-hist');
 
-  let data = rawKpis.filter(d=>d.fecha);
+  let data = rawKpis.filter(d=>d.fecha && new Date(d.fecha).getFullYear() >= 2026);
   if(mes)    data=data.filter(d=>getMes(d.fecha)===mes);
   if(semana) data=data.filter(d=>getSemana(d.fecha)===semana);
 
