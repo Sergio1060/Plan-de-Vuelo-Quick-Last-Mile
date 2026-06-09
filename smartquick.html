@@ -902,7 +902,9 @@ function buildKpis(data, ciuData, ciudades){
 async function renderPV(){
   const ciudades = getSelectedCiudades('ms-pv');
   const kpis  = rawKpis.filter(d=>d.fecha);
-  const today = kpis.length>0?kpis[0]:null; // primer elemento = más reciente (ORDER BY fecha DESC)
+  // Obtener fecha de hoy en Colombia
+  const todayStr = new Date().toLocaleDateString('en-CA', {timeZone:'America/Bogota'}); // YYYY-MM-DD
+  const today = kpis.find(d=>d.fecha && d.fecha.substr(0,10) === todayStr) || kpis[0] || null;
   let ciuHoy  = rawCiudadesHoy; // solo datos de hoy
   if(ciudades) ciuHoy = ciuHoy.filter(d=>ciudades.includes(d.city));
 
@@ -917,11 +919,12 @@ async function renderPV(){
   });
   const ciuArr = Object.values(byCiu).map(c=>({...c,pct:c.total>0?(c.completados/c.total*100):0})).sort((a,b)=>b.total-a.total);
 
+  // Calcular totales desde rawCiudadesHoy (fuente más confiable para hoy)
   let totalS=0,compS=0,cancS=0,ingS=0;
-  if(ciudades){
-    totalS=ciuArr.reduce((s,d)=>s+d.total,0);
-    compS=ciuArr.reduce((s,d)=>s+d.completados,0);
-    cancS=ciuArr.reduce((s,d)=>s+d.cancelados,0);
+  if(ciuHoy.length > 0){
+    totalS=ciuHoy.reduce((s,d)=>s+parseInt(d.total||0),0);
+    compS=ciuHoy.reduce((s,d)=>s+parseInt(d.completados||0),0);
+    cancS=ciuHoy.reduce((s,d)=>s+parseInt(d.cancelados||0),0);
   } else if(today){
     totalS=parseInt(today.total_servicios||0);
     compS=parseInt(today.completados||0);
