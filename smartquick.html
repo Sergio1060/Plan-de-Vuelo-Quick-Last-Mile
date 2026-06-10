@@ -809,7 +809,7 @@ async function renderPV(){
   const efectT = totalS>0?(compS/totalS*100):0;
   const enProc = Math.max(0,totalS-compS-cancS);
 
-  const dateLabel = today?.fecha ? new Date(today.fecha).toLocaleDateString('es-CO',{weekday:'long',day:'2-digit',month:'long',timeZone:'America/Bogota'}) : '—';
+  const dateLabel = today?.fecha ? (([y,m,d])=>new Date(y,m-1,d).toLocaleDateString('es-CO',{weekday:'long',day:'2-digit',month:'long'}))(today.fecha.split('T')[0].split('-')) : '—';
   document.getElementById('pvDate').textContent = dateLabel;
   document.getElementById('pv-info').textContent = `${fmt(totalS)} servicios${ciudades?` · ${ciudades.length} ciudad(es) filtradas`:''}`;
 
