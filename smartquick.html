@@ -780,7 +780,7 @@ function buildKpis(data, ciuData, ciudades){
 async function renderPV(){
   const ciudades = getSelectedCiudades('ms-pv');
   const kpis  = rawKpis.filter(d=>d.fecha);
-  const today = kpis.length>0?kpis[kpis.length-1]:null;
+  const today = kpis.length>0?kpis[0]:null;
   let ciuHoy  = rawCiudadesHoy; // solo datos de hoy
   if(ciudades) ciuHoy = ciuHoy.filter(d=>ciudades.includes(d.city));
 
