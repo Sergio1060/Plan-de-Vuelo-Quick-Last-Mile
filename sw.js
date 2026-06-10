@@ -1,38 +1,33 @@
-const CACHE = 'smartquick-v1';
+const CACHE = 'quicktc-v3';
 const ASSETS = [
-  '/Torre-de-Control-Quick-Last-Mile/smartquick.html',
-  'https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap',
-  'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js'
+  '/Torre-de-Control-Quick-Last-Mile/smartquick.html'
 ];
 
 self.addEventListener('install', e => {
   e.waitUntil(
-    caches.open(CACHE).then(c => c.addAll(ASSETS).catch(()=>{}))
+    caches.open(CACHE).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting())
   );
-  self.skipWaiting();
 });
 
 self.addEventListener('activate', e => {
   e.waitUntil(
     caches.keys().then(keys =>
-      Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))
-    )
+      Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
+    ).then(() => self.clients.claim())
   );
-  self.clients.claim();
 });
 
 self.addEventListener('fetch', e => {
-  // API calls: network first
-  if(e.request.url.includes('n8n.srv1729021')) {
-    e.respondWith(fetch(e.request).catch(()=>caches.match(e.request)));
-    return;
+  // API calls: network only (always fresh data)
+  if (e.request.url.includes('n8n.srv1729021')) {
+    return e.respondWith(fetch(e.request));
   }
-  // Assets: cache first
+  // App shell: cache first, fallback network
   e.respondWith(
-    caches.match(e.request).then(r => r || fetch(e.request).then(res => {
-      const clone = res.clone();
-      caches.open(CACHE).then(c=>c.put(e.request,clone));
-      return res;
+    caches.match(e.request).then(cached => cached || fetch(e.request).then(resp => {
+      const clone = resp.clone();
+      caches.open(CACHE).then(c => c.put(e.request, clone));
+      return resp;
     }))
   );
 });
