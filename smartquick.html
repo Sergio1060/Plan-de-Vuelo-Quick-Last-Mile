@@ -724,7 +724,7 @@ function getSelectedCiudades(msId){
 
 // ─── FETCH ───────────────────────────────────────────────
 async function fetchAPI(path){
-  const r = await fetch(`${API}/${path}`);
+  const r = await fetch(`${API}/${path}?_=${Date.now()}`, {cache:'no-store'});
   const j = await r.json();
   return j.data||j||[];
 }
