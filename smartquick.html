@@ -830,6 +830,12 @@ let rawPendientesResumen=[], rawPendientesDetalle=[];
 let rawCiudadesHoy=[];
 
 // ── UTILS ──
+// ── DANE CODE FIX ──
+const CITY_FIX = {
+  '05615': 'El Carmen de Viboral'
+};
+const fixCity = c => CITY_FIX[c] || c;
+
 const fmt    = n => Number(n||0).toLocaleString('es-CO');
 const fmtCOP = n => '$' + Math.round((n||0)/1000).toLocaleString('es-CO') + 'K';
 const fmtPct = n => parseFloat(n||0).toFixed(1) + '%';
@@ -952,7 +958,7 @@ async function renderPV(){
 
   const byCiu={};
   ciuHoy.forEach(d=>{
-    const c=d.city||'—';
+    const c=fixCity(d.city||'—');
     if(!byCiu[c])byCiu[c]={city:c,total:0,completados:0,cancelados:0};
     byCiu[c].total+=parseInt(d.total||0);
     byCiu[c].completados+=parseInt(d.completados||0);
@@ -1194,7 +1200,7 @@ function renderCiudades(){
   if(mes)data=data.filter(d=>getMes(d.fecha?.substr?d.fecha.substr(0,10):d.fecha)===mes);
   const byCiu={};
   data.forEach(d=>{
-    const c=d.city||'—';
+    const c=fixCity(d.city||'—');
     if(!byCiu[c])byCiu[c]={city:c,total:0,completados:0,cancelados:0};
     byCiu[c].total+=parseInt(d.total||0);byCiu[c].completados+=parseInt(d.completados||0);byCiu[c].cancelados+=parseInt(d.cancelados||0);
   });
@@ -1278,7 +1284,7 @@ function renderCumplimiento(){
 
   const byCiu={};
   ciuData.forEach(d=>{
-    const c=d.city||'—';
+    const c=fixCity(d.city||'—');
     if(!byCiu[c])byCiu[c]={city:c,total:0,comp:0,canc:0};
     byCiu[c].total+=parseInt(d.total||0);byCiu[c].comp+=parseInt(d.completados||0);byCiu[c].canc+=parseInt(d.cancelados||0);
   });
@@ -1384,7 +1390,7 @@ function filterPendientes(){
     <tbody>${data.map(d=>`<tr>
       <td class="td-mono" style="font-size:10px">${d.service_id}</td>
       <td class="td-name" style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${d.client||'—'}</td>
-      <td class="td-muted">${d.city||'—'}</td>
+      <td class="td-muted">${fixCity(d.city||'—')}</td>
       <td><span class="badge badge-${d.status==='Fallido'?'red':d.status==='No asignado'?'amber':'blue'}">${d.status}</span></td>
       <td class="td-mono td-muted">${(d.fecha_creacion||'').substr(0,10)}</td>
       <td class="td-mono" style="font-weight:600;color:${parseInt(d.dias_pendiente)>=30?'var(--red)':parseInt(d.dias_pendiente)>=15?'var(--amber)':'var(--text-2)'}">${d.dias_pendiente}d</td>
@@ -1415,8 +1421,8 @@ async function loadAll(manual){
     rawPendientesResumen=pendResumen.filter(d=>d.status!=='Fallido');
     rawPendientesDetalle=pendDetalle.filter(d=>d.status!=='Fallido');
     rawCiudadesHoy=ciudadesHoy;
-    const allCiudades=[...new Set(ciudades.map(d=>d.city).filter(Boolean))].sort();
-    const ciudadesHoyList=[...new Set(ciudadesHoy.map(d=>d.city).filter(Boolean))].sort();
+    const allCiudades=[...new Set(ciudades.map(d=>fixCity(d.city)).filter(Boolean))].sort();
+    const ciudadesHoyList=[...new Set(ciudadesHoy.map(d=>fixCity(d.city)).filter(Boolean))].sort();
     initMS('ms-pv',ciudadesHoyList,()=>renderPV());
     ['ms-hist','ms-ciu','ms-cum'].forEach(id=>{
       initMS(id,allCiudades,()=>{
